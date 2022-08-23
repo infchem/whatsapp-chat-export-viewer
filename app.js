@@ -1,4 +1,8 @@
 
+// WA on Android exports chat with "dd.mm.yy, hh:mm - "
+const androidExportTimestampFormat = /(^[0-9]{2}\.[0-9]{2}\.[0-9]{2}, [0-9]{2}:[0-9]{2})( - )/; 
+
+
 var app = new Vue({
 	el: '#app',
 	data: function() {
@@ -17,6 +21,8 @@ var app = new Vue({
 			var data = res.data;
 			data = data.replace(/\u200E/g, ""); // Left-To-Right Mark
 
+			var isAndroidExport = androidExportTimestampFormat.test(data); // check if exported from Android, if so, set flag
+
 			var lines = data.split(/(\n|\r)/);
 
 			// Debug: Import kürzen
@@ -25,6 +31,13 @@ var app = new Vue({
 			var message;
 			lines.forEach(function(line) {
 				line = line.replace(/(\r\n|\n|\r)/gm, "").trim();
+
+				// fix timestamp in Android chat export, if present 
+				if (isAndroidExport) {
+					line=line.replace(/(^[0-9]{2}\.[0-9]{2}\.[0-9]{2}, [0-9]{2}:[0-9]{2})( - )/,'[$1:00] ');
+					line = line.replace("(Datei angehängt)","&lt;angehängt>");
+				}
+
 				if(line.length == 0) { return; } 
 				var newMessage = /^\[[0-9]{2}\.[0-9]{2}\.[0-9]{2}, [0-9]{2}:[0-9]{2}:[0-9]{2}.*/.test(line);
 
@@ -50,7 +63,7 @@ var app = new Vue({
 				line = line.replace(/</g, '&lt;');
 
 				// Media
-				line = line.replace(/([a-zA-Z0-9-]+\.jpg)\ &lt;angeh�ngt>/g, '<div class="media"><a href="media/$1" target="blank"><img src="media/$1" /></a></div>');
+				line = line.replace(/([a-zA-Z0-9-]+\.(jpg|mp4))\ &lt;angehängt>/g, '<div class="media"><a href="media/$1" target="blank"><img src="media/$1" /></a></div>');
 				line = line.replace(/\&lt;Anhang: ([a-zA-Z0-9-]+\.jpg|webp|gif)\>/g, '<div class="media"><a href="media/$1" target="blank"><img src="media/$1" /></a></div>');
 				line = line.replace(/\&lt;Anhang: ([a-zA-Z0-9-]+\.mp4)\>/g, '<div class="media"><video src="media/$1" controls=""></div>');
 				line = line.replace(/\&lt;Anhang: ([a-zA-Z0-9-]+\..+)\>/g, '<div class="media">Media: <a href="media/$1" target="blank">$1</a></div>');
